@@ -1,0 +1,28 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+
+# IDE
+.vscode/
+.idea/
+.DS_Store
+
+# DATA & MODELS
+/data/
+/models/
+/checkpoints/
+*.pt
+*.pth
+*.bin
+*.wav
+*.mp3
+
+# Jupyter Notebooks
+.ipynb_checkpoints/
