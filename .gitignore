@@ -16,13 +16,12 @@ wheels/
 
 # DATA & MODELS
 /data/
+/data_raw/
 /models/
 /checkpoints/
 *.pt
 *.pth
 *.bin
-*.wav
-*.mp3
 
 # Jupyter Notebooks
 .ipynb_checkpoints/
