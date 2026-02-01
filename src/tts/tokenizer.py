@@ -2,7 +2,7 @@ import json
 from pathlib import Path
 from typing import List
 
-from phonemizer import phonemize
+from phonemizer.backend import EspeakBackend
 
 import src.tts.config as config
 
@@ -16,38 +16,39 @@ class Tokenizer:
         self.pad = "<PAD>"
         self.special_tokens = [self.eos, self.pad]
 
+        self.backend = EspeakBackend(
+            language="en-us", preserve_punctuation=True, with_stress=True
+        )
+
         if self.vocab_path.exists():
             with open(self.vocab_path, "r") as f:
                 self.token_to_id = json.load(f)
                 self.id_to_token = {v: k for k, v in self.token_to_id.items()}
 
     def encode(self, text: str) -> List[int]:
-        tokens = phonemize(
-            text,
-            language="en-us",
-            backend="espeak",
+        phs = self.backend.phonemize(
+            [text],
             strip=True,
-            preserve_punctuation=True,
-            with_stress=True,
-        )
+        )[0]
 
-        ids = [self.token_to_id[p] for p in tokens]
+        ids = [self.token_to_id[ph] for ph in phs]
         ids.append(self.token_to_id[self.eos])
 
         return ids
 
     def build_from_text(self, texts: List[str]):
-        text = " ".join(texts)
-        all_ph = phonemize(
-            text,
-            language="en-us",
-            backend="espeak",
+        all_ph = self.backend.phonemize(
+            texts,
             strip=True,
-            preserve_punctuation=True,
-            with_stress=True,
         )
-        ph_unique = sorted(list(set(all_ph)))
+
+        ph_unique = set()
+        for ph_str in all_ph:
+            ph_unique.update(list(ph_str))
+
+        ph_unique = sorted(list(ph_unique))
         cur_id = config.PHONEME_START_ID
+        self.token_to_id = {}
 
         for tok in self.special_tokens:
             self.token_to_id[tok] = cur_id
@@ -56,6 +57,7 @@ class Tokenizer:
         for tok in ph_unique:
             self.token_to_id[tok] = cur_id
             cur_id += 1
+
         self.id_to_token = {v: k for k, v in self.token_to_id.items()}
 
         with open(self.vocab_path, "w") as f:
