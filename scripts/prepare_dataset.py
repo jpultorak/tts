@@ -48,8 +48,7 @@ def main():
     success_count = 0
     fail_count = 0
 
-    debug_df = df.head(10)
-    for idx, row in tqdm(debug_df.iterrows(), total=len(debug_df)):
+    for idx, row in tqdm(df.iterrows(), total=len(df)):
         file_id = row["ID"]
         text_norm = row["Normalized"]
         wav_path = wavs_dir / f"{file_id}.wav"
