@@ -30,7 +30,9 @@ class BabyValle(nn.Module):
             batch_first=True,
             norm_first=True,
         )
-        self.blocks = nn.TransformerEncoder(encoder_layer, num_layers=num_layers)
+        self.blocks = nn.TransformerEncoder(
+            encoder_layer, num_layers=num_layers, enable_nested_tensor=False
+        )
 
         self.ln_f = nn.LayerNorm(d_model)
         self.head = nn.Linear(d_model, vocab_size)
@@ -55,7 +57,9 @@ class BabyValle(nn.Module):
 
         x_emb = self.token_emb(x) + self.pos_emb(positions) + self.type_emb(token_types)
 
-        attn_mask = nn.Transformer.generate_square_subsequent_mask(T).to(device)
+        attn_mask = torch.triu(
+            torch.ones((T, T), device=device, dtype=torch.bool), diagonal=1
+        )
 
         key_padding_mask = x == config.PAD_TOKEN_ID
 

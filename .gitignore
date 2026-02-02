@@ -15,13 +15,13 @@ wheels/
 .DS_Store
 
 # DATA & MODELS
-/data/
-/data_raw/
-/models/
+data/
+data_raw/
 /checkpoints/
 *.pt
 *.pth
 *.bin
+output/
 
 # Jupyter Notebooks
 .ipynb_checkpoints/
