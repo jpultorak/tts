@@ -1,10 +1,15 @@
 import json
+import os
 from pathlib import Path
 from typing import List
 
 from phonemizer.backend import EspeakBackend
 
-import src.tts.config as config
+import tts.config as config
+
+os.environ["PHONEMIZER_ESPEAK_LIBRARY"] = (
+    "/opt/homebrew/lib/libespeak-ng.dylib"  # TODO: FIX THIS
+)
 
 
 class Tokenizer:
