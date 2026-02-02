@@ -19,7 +19,8 @@ class Tokenizer:
         self.id_to_token: dict[int, str] = {}
         self.eos = "<EOS>"
         self.pad = "<PAD>"
-        self.special_tokens = [self.eos, self.pad]
+        self.sep = "<SEP>"
+        self.special_tokens = [self.eos, self.pad, self.sep]
 
         self.backend = EspeakBackend(
             language="en-us", preserve_punctuation=True, with_stress=True
