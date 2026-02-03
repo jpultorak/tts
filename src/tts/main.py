@@ -4,7 +4,7 @@ from tqdm import tqdm
 import tts.config as config
 from tts.infer import TTSInference
 
-CHECKPOINT_PATH = config.ROOT_DIR / "checkpoints" / "model_epoch_200.pt"
+CHECKPOINT_PATH = config.ROOT_DIR / "checkpoints" / "model_epoch_5.pt"
 TRAIN_DATA_DIR = config.ROOT_DIR / "test_training_data"
 OUTPUT_DIR = config.ROOT_DIR / "output"
 

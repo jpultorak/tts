@@ -7,10 +7,13 @@ from phonemizer.backend import EspeakBackend
 
 import tts.config as config
 
-os.environ["PHONEMIZER_ESPEAK_LIBRARY"] = (
-    "/opt/homebrew/lib/libespeak-ng.dylib"  # TODO: FIX THIS
-)
+# MACOS
+# os.environ["PHONEMIZER_ESPEAK_LIBRARY"] = (
+#     "/opt/homebrew/lib/libespeak-ng.dylib"  # TODO: FIX THIS
+# )
 
+# WINDOWS
+os.environ["PHONEMIZER_ESPEAK_LIBRARY"] = r"C:\Program Files\eSpeak NG\libespeak-ng.dll"
 
 class Tokenizer:
     def __init__(self, vocab_path=config.VOCAB_PATH):
@@ -27,7 +30,7 @@ class Tokenizer:
         )
 
         if self.vocab_path.exists():
-            with open(self.vocab_path, "r") as f:
+            with open(self.vocab_path, "r", encoding="utf-8") as f:
                 self.token_to_id = json.load(f)
                 self.id_to_token = {v: k for k, v in self.token_to_id.items()}
 
@@ -66,5 +69,5 @@ class Tokenizer:
 
         self.id_to_token = {v: k for k, v in self.token_to_id.items()}
 
-        with open(self.vocab_path, "w") as f:
+        with open(self.vocab_path, "w", encoding="utf-8") as f:
             json.dump(self.token_to_id, f, indent=4, ensure_ascii=False)
