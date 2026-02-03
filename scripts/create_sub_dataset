@@ -1,0 +1,19 @@
+from pathlib import Path
+import shutil
+
+
+ROOT_DIR = Path(__file__).resolve().parent.parent
+DATA_DIR = ROOT_DIR / "data"
+DST_DIR = Path("data_small_100")
+N = 100
+
+DST_DIR.mkdir(parents=True, exist_ok=True)
+
+files = sorted(DATA_DIR.glob("LJ001-*.pt"))[:N]
+
+print(f"Copying {len(files)} files to {DST_DIR}")
+
+for f in files:
+    shutil.copy(f, DST_DIR / f.name)
+
+print("Done.")

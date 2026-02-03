@@ -8,22 +8,20 @@ from pathlib import Path
 
 import tts.config as config
 from tts.dataset import TTSDataset, collate_fn
-
-# Import your custom modules
 from tts.model import BabyValle
 
-# --- Hyperparameters (Optimized for 4070 Ti Overnight) ---
-BATCH_SIZE = 24       # Safe sweet spot. 
+
+BATCH_SIZE = 32
 LEARNING_RATE = 3e-4  
-EPOCHS = 100          # The goal for a good model
+EPOCHS = 60
 GRAD_CLIP = 1.0       
-SAVE_EVERY = 5        # Save often enough to not lose progress
-NUM_WORKERS = 6      # Sweet spot for Windows
+SAVE_EVERY = 5
+NUM_WORKERS = 4
 
 ROOT_DIR = config.ROOT_DIR
-CHECKPOINT_DIR = ROOT_DIR / "checkpoints"
+CHECKPOINT_DIR = ROOT_DIR / "checkpoints_model_full"
 DATA_DIR = ROOT_DIR / "data"
-RESUME_FROM = CHECKPOINT_DIR / "model_epoch_10.pt" 
+RESUME_FROM = None #CHECKPOINT_DIR / "model_epoch_10.pt" 
 
 def get_device():
     if torch.cuda.is_available():
@@ -60,25 +58,21 @@ def load_checkpoint(path, model, optimizer, scaler, device):
     return start_epoch
 
 def train():
-    # 1. Setup Device
+
     device = get_device()
     print(f"--> Training on device: {device}")
     
-    # 2. Setup AMP (The Speed Booster) - NEW SYNTAX
-    # We only use AMP if we are strictly on CUDA for now.
     use_amp = (device.type == 'cuda')
     
-    # Initialize the Scaler with the specific device
-    # "enabled=use_amp" ensures it does nothing if we aren't on GPU
+
     scaler = torch.amp.GradScaler('cuda', enabled=use_amp)
     
     if use_amp:
         print("--> Automatic Mixed Precision (AMP) Enabled 🚀")
 
-    # Create checkpoint dir
+
     os.makedirs(CHECKPOINT_DIR, exist_ok=True)
 
-    # 3. Prepare Data
     print(f"--> Loading Dataset from {DATA_DIR}...")
     train_dataset = TTSDataset(data_dir=DATA_DIR)
 
@@ -88,12 +82,11 @@ def train():
         shuffle=True,
         collate_fn=collate_fn,
         num_workers=NUM_WORKERS,
-        # Pin memory speeds up transfer from RAM to GPU
+ 
         pin_memory=True if device.type == 'cuda' else False 
     )
     print(f"--> Data loaded: {len(train_dataset)} samples.")
 
-    # 4. Initialize Model
     model = BabyValle(
         vocab_size=2048, 
         d_model=512,
@@ -110,7 +103,6 @@ def train():
             RESUME_FROM, model, optimizer, scaler, device
         )
 
-    # 5. Training Loop
     model.train()
 
     for epoch in range(start_epoch, EPOCHS):
@@ -121,8 +113,6 @@ def train():
         for batch_idx, (x, y) in enumerate(progress_bar):
             x, y = x.to(device), y.to(device)
             
-            # --- AMP Forward Pass ---
-            # NEW SYNTAX: torch.amp.autocast('cuda', ...)
             with torch.amp.autocast('cuda', enabled=use_amp):
                 logits = model(x)
                 B, T, C = logits.shape
@@ -130,7 +120,6 @@ def train():
 
             optimizer.zero_grad()
             
-            # --- AMP Backward Pass ---
             scaler.scale(loss).backward()
             
             scaler.unscale_(optimizer)

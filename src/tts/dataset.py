@@ -18,8 +18,9 @@ class TTSDataset(Dataset):
         path = self.files[idx]
         data = torch.load(path)
 
-        phonemes = data["phonemes"][:-1].long()
+        phonemes = data["phonemes"].long()
         audio = data["audio_tokens"].long()
+        
         sep = torch.tensor([config.SEP_TOKEN_ID], dtype=torch.long)
         eos = torch.tensor([config.EOS_TOKEN_ID], dtype=torch.long)
 

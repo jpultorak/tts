@@ -41,8 +41,6 @@ class Tokenizer:
         )[0]
 
         ids = [self.token_to_id[ph] for ph in phs]
-        ids.append(self.token_to_id[self.eos])
-
         return ids
 
     def build_from_text(self, texts: List[str]):
@@ -56,18 +54,19 @@ class Tokenizer:
             ph_unique.update(list(ph_str))
 
         ph_unique = sorted(list(ph_unique))
-        cur_id = config.PHONEME_START_ID
-        self.token_to_id = {}
 
-        for tok in self.special_tokens:
-            self.token_to_id[tok] = cur_id
-            cur_id += 1
+        self.token_to_id = {
+            self.eos: config.EOS_TOKEN_ID,
+            self.pad: config.PAD_TOKEN_ID,
+            self.sep: config.SEP_TOKEN_ID,
+        }
 
+        next_id = max(self.token_to_id.values()) + 1
+        
         for tok in ph_unique:
-            self.token_to_id[tok] = cur_id
-            cur_id += 1
+            self.token_to_id[tok] = next_id
+            next_id += 1
 
         self.id_to_token = {v: k for k, v in self.token_to_id.items()}
-
         with open(self.vocab_path, "w", encoding="utf-8") as f:
             json.dump(self.token_to_id, f, indent=4, ensure_ascii=False)

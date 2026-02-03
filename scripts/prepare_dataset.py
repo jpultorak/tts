@@ -19,7 +19,8 @@ def main():
     print("Loading/Downloading LJSpeech Dataset...")
 
     raw_data = ROOT_DIR / "data_raw"
-
+    raw_data.mkdir(parents=True, exist_ok=True)
+    
     # We use torchaudio just for the download logic.
     torchaudio.datasets.LJSPEECH(root=raw_data, download=True)
 

@@ -4,9 +4,9 @@ from tqdm import tqdm
 import tts.config as config
 from tts.infer import TTSInference
 
-CHECKPOINT_PATH = config.ROOT_DIR / "checkpoints" / "model_epoch_5.pt"
-TRAIN_DATA_DIR = config.ROOT_DIR / "test_training_data"
-OUTPUT_DIR = config.ROOT_DIR / "output"
+CHECKPOINT_PATH = config.ROOT_DIR / "checkpoints_model_full" / "model_epoch_40.pt"
+TRAIN_DATA_DIR = config.ROOT_DIR / "data_test"
+OUTPUT_DIR = config.ROOT_DIR / "output_full"
 
 
 def main():
@@ -38,5 +38,42 @@ def main():
     print(f"\n✅ Batch Inference Complete! Check {OUTPUT_DIR}")
 
 
+def prompt_mode():
+    PROMPT_DIR = OUTPUT_DIR / "prompts"
+    PROMPT_DIR.mkdir(parents=True, exist_ok=True)
+
+    tts = TTSInference(CHECKPOINT_PATH)
+
+    print("\nPrompt mode (empty line to quit)")
+    prompt_idx = 0
+
+    while True:
+        text = input("\nEnter text > ").strip()
+        if text == "":
+            print("Exiting prompt mode.")
+            break
+
+        prompt_idx += 1
+        sample_dir = PROMPT_DIR / f"prompt_{prompt_idx:03d}"
+        sample_dir.mkdir(parents=True, exist_ok=True)
+
+        text_path = sample_dir / "text.txt"
+        wav_path = sample_dir / "audio.wav"
+
+        with open(text_path, "w", encoding="utf-8") as f:
+            f.write(text)
+
+        try:
+            tts.generate_audio(
+                text=text,
+                output_path=str(wav_path),
+                max_new_tokens=750,
+            )
+            print(f"✅ Saved to {sample_dir}")
+        except Exception as e:
+            print(f"❌ Generation failed: {e}")
+
+
 if __name__ == "__main__":
-    main()
+    # main()
+    prompt_mode()

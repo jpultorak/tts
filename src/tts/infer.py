@@ -35,23 +35,52 @@ class TTSInference:
         self.codec.to(self.device)
         self.codec.eval()
 
-    def generate_audio(
-        self, text: str, output_path: str = "output.wav", max_new_tokens=750
-    ):
+    def generate_audio(self, text: str, output_path: str = "output.wav", max_new_tokens=750):
         print(f"--> Generating for: '{text}'")
-        phonemes = self.tokenizer.encode(text)[:-2]
+
+        phonemes = self.tokenizer.encode(text)
         input_ids = phonemes + [config.SEP_TOKEN_ID]
         input_tensor = torch.tensor([input_ids], dtype=torch.long).to(self.device)
 
         generated = []
+        
+        temperature = 0.8  # Allow it to breathe!
+        top_k = 50
+        top_p = 0.9 
+        rep_penalty = 1.2 
+
         for _ in range(max_new_tokens):
             with torch.no_grad():
                 logits = self.model(input_tensor)
 
             next_token_logits = logits[:, -1, :]
-            next_token = torch.argmax(next_token_logits, dim=-1).unsqueeze(0)  # [1, 1]
+            for token_in_set in set(generated[-20:]):
+                next_token_logits[:, token_in_set] /= rep_penalty
 
+            # 2. Temperature
+            next_token_logits = next_token_logits / temperature
+
+            # 3. Block Special Tokens (Pad/Sep)
+            next_token_logits[:, 1025:] = -float('inf')
+
+            # 4. Top-K Filter
+            v, _ = torch.topk(next_token_logits, top_k)
+            out_of_k = next_token_logits < v[:, [-1]]
+            next_token_logits[out_of_k] = -float('inf')
+
+    
+            sorted_logits, sorted_indices = torch.sort(next_token_logits, descending=True)
+            cumulative_probs = torch.cumsum(torch.softmax(sorted_logits, dim=-1), dim=-1)
+            sorted_indices_to_remove = cumulative_probs > top_p
+            sorted_indices_to_remove[..., 1:] = sorted_indices_to_remove[..., :-1].clone()
+            sorted_indices_to_remove[..., 0] = 0
+            indices_to_remove = sorted_indices_to_remove.scatter(1, sorted_indices, sorted_indices_to_remove)
+            next_token_logits[indices_to_remove] = -float('inf')
+
+            probs = torch.nn.functional.softmax(next_token_logits, dim=-1)
+            next_token = torch.multinomial(probs, num_samples=1)
             token_id = next_token.item()
+
             if token_id == config.EOS_TOKEN_ID:
                 break
 
@@ -60,7 +89,7 @@ class TTSInference:
 
         print(f"--> Generated {len(generated)} audio codes.")
         self.save_wav(generated, output_path)
-
+        
     def save_wav(self, codes_list, path):
         codes_tensor = (
             torch.tensor(codes_list).unsqueeze(0).unsqueeze(0).to(self.device)
