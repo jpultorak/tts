@@ -4,7 +4,7 @@ from tqdm import tqdm
 import tts.config as config
 from tts.infer import TTSInference
 
-CHECKPOINT_PATH = config.ROOT_DIR / "checkpoints_model_full" / "model_epoch_40.pt"
+CHECKPOINT_PATH = config.ROOT_DIR / "checkpoints_model_full" / "model_epoch_200.pt"
 TRAIN_DATA_DIR = config.ROOT_DIR / "data_test"
 OUTPUT_DIR = config.ROOT_DIR / "output_full"
 
@@ -75,5 +75,5 @@ def prompt_mode():
 
 
 if __name__ == "__main__":
-    # main()
-    prompt_mode()
+    main()
+    # prompt_mode()

@@ -13,15 +13,15 @@ from tts.model import BabyValle
 
 BATCH_SIZE = 32
 LEARNING_RATE = 3e-4  
-EPOCHS = 60
+EPOCHS = 200
 GRAD_CLIP = 1.0       
-SAVE_EVERY = 5
+SAVE_EVERY = 10
 NUM_WORKERS = 4
 
 ROOT_DIR = config.ROOT_DIR
 CHECKPOINT_DIR = ROOT_DIR / "checkpoints_model_full"
 DATA_DIR = ROOT_DIR / "data"
-RESUME_FROM = None #CHECKPOINT_DIR / "model_epoch_10.pt" 
+RESUME_FROM = CHECKPOINT_DIR / "model_epoch_120.pt" 
 
 def get_device():
     if torch.cuda.is_available():
@@ -81,6 +81,7 @@ def train():
         batch_size=BATCH_SIZE,
         shuffle=True,
         collate_fn=collate_fn,
+        persistent_workers=True,
         num_workers=NUM_WORKERS,
  
         pin_memory=True if device.type == 'cuda' else False 

@@ -55,15 +55,15 @@ class TTSInference:
 
             next_token_logits = logits[:, -1, :]
             for token_in_set in set(generated[-20:]):
-                next_token_logits[:, token_in_set] /= rep_penalty
+                if next_token_logits[:, token_in_set] < 0:
+                    next_token_logits[:, token_in_set] *= rep_penalty
+                else:
+                    next_token_logits[:, token_in_set] /= rep_penalty
 
-            # 2. Temperature
             next_token_logits = next_token_logits / temperature
 
-            # 3. Block Special Tokens (Pad/Sep)
             next_token_logits[:, 1025:] = -float('inf')
 
-            # 4. Top-K Filter
             v, _ = torch.topk(next_token_logits, top_k)
             out_of_k = next_token_logits < v[:, [-1]]
             next_token_logits[out_of_k] = -float('inf')
