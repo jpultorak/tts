@@ -4,7 +4,7 @@ import torch.nn as nn
 import tts.config as config
 
 
-class BabyValle(nn.Module):
+class TtsModel(nn.Module):
     def __init__(
         self,
         vocab_size: int = 2048,
