@@ -75,5 +75,5 @@ def prompt_mode():
 
 
 if __name__ == "__main__":
-    main()
-    # prompt_mode()
+    # main()
+    prompt_mode()
