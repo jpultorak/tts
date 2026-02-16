@@ -91,7 +91,10 @@ def train():
     print(f"--> Data loaded: {len(train_dataset)} samples.")
 
     model = TtsModel(
-        vocab_size=2048, d_model=512, nhead=8, num_layers=6, max_len=4096
+        vocab_size=2048,
+        d_model=512,
+        nhead=8,
+        num_layers=6,
     ).to(device)
 
     optimizer = optim.AdamW(model.parameters(), lr=LEARNING_RATE)
@@ -107,16 +110,21 @@ def train():
         total_loss = 0
         progress_bar = tqdm(train_loader, desc="Training")
 
-        for batch_idx, (x, y) in enumerate(progress_bar):
-            x, y = x.to(device), y.to(device)
+        # UPDATED: Unpack 3 items
+        for batch_idx, (src, tgt_input, tgt_output) in enumerate(progress_bar):
+            src = src.to(device)
+            tgt_input = tgt_input.to(device)
+            tgt_output = tgt_output.to(device)
 
             with torch.amp.autocast("cuda", enabled=use_amp):
-                logits = model(x)
+                # Forward pass takes two inputs now
+                logits = model(src, tgt_input)
+
                 B, T, C = logits.shape
-                loss = criterion(logits.view(B * T, C), y.view(B * T))
+                # Calculate loss against tgt_output
+                loss = criterion(logits.view(B * T, C), tgt_output.view(B * T))
 
             optimizer.zero_grad()
-
             scaler.scale(loss).backward()
 
             scaler.unscale_(optimizer)

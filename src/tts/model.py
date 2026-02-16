@@ -1,3 +1,4 @@
+# model.py
 import torch
 import torch.nn as nn
 
@@ -11,16 +12,16 @@ class TtsModel(nn.Module):
         d_model: int = 512,
         nhead: int = 8,
         num_layers: int = 6,
-        max_len: int = 2048,
         dropout: float = 0.1,
     ):
         super().__init__()
-        self.d_model = d_model
 
+        # Embeddings
         self.token_emb = nn.Embedding(vocab_size, d_model)
-        self.pos_emb = nn.Embedding(max_len, d_model)
-        self.type_emb = nn.Embedding(2, d_model)
+        # We use a learnable position embedding for simplicity in both Enc and Dec
+        self.pos_emb = nn.Embedding(4096, d_model)
 
+        # 1. THE ENCODER (Processes Phonemes)
         encoder_layer = nn.TransformerEncoderLayer(
             d_model=d_model,
             nhead=nhead,
@@ -30,9 +31,19 @@ class TtsModel(nn.Module):
             batch_first=True,
             norm_first=True,
         )
-        self.blocks = nn.TransformerEncoder(
-            encoder_layer, num_layers=num_layers, enable_nested_tensor=False
+        self.encoder = nn.TransformerEncoder(encoder_layer, num_layers=num_layers)
+
+        # 2. THE DECODER (Generates Audio, attending to Encoder)
+        decoder_layer = nn.TransformerDecoderLayer(
+            d_model=d_model,
+            nhead=nhead,
+            dim_feedforward=d_model * 4,
+            dropout=dropout,
+            activation="gelu",
+            batch_first=True,
+            norm_first=True,
         )
+        self.decoder = nn.TransformerDecoder(decoder_layer, num_layers=num_layers)
 
         self.ln_f = nn.LayerNorm(d_model)
         self.head = nn.Linear(d_model, vocab_size)
@@ -42,32 +53,53 @@ class TtsModel(nn.Module):
     def _init_weights(self, module):
         if isinstance(module, nn.Linear):
             torch.nn.init.normal_(module.weight, mean=0.0, std=0.02)
-            if module.bias is not None:
-                torch.nn.init.zeros_(module.bias)
         elif isinstance(module, nn.Embedding):
             torch.nn.init.normal_(module.weight, mean=0.0, std=0.02)
 
-    def forward(self, x):
-        B, T = x.shape
-        device = x.device
+    def forward(self, src, tgt):
+        # src: [Batch, Src_Len] (Phonemes)
+        # tgt: [Batch, Tgt_Len] (Audio Input)
 
-        positions = torch.arange(T, device=device)
+        device = src.device
 
-        token_types = (x >= 1024).long()
+        # --- Masks ---
+        # 1. Padding Mask for Source (Phonemes)
+        src_key_padding_mask = src == config.PAD_TOKEN_ID
 
-        x_emb = self.token_emb(x) + self.pos_emb(positions) + self.type_emb(token_types)
+        # 2. Padding Mask for Target (Audio)
+        tgt_key_padding_mask = tgt == config.PAD_TOKEN_ID
 
-        attn_mask = torch.triu(
-            torch.ones((T, T), device=device, dtype=torch.bool), diagonal=1
+        # 3. Causal Mask for Target (Prevent looking ahead in audio)
+        tgt_seq_len = tgt.shape[1]
+        tgt_mask = torch.triu(
+            torch.ones((tgt_seq_len, tgt_seq_len), device=device), diagonal=1
+        ).bool()
+
+        # --- Embedding + Positional Encoding ---
+        # Encoder Source
+        src_pos = torch.arange(src.shape[1], device=device).unsqueeze(0)
+        src_emb = self.token_emb(src) + self.pos_emb(src_pos)
+
+        # Decoder Target
+        tgt_pos = torch.arange(tgt.shape[1], device=device).unsqueeze(0)
+        tgt_emb = self.token_emb(tgt) + self.pos_emb(tgt_pos)
+
+        # --- Transformer Pass ---
+
+        # 1. Encode Phonemes
+        # memory shape: [Batch, Src_Len, D_Model]
+        memory = self.encoder(src_emb, src_key_padding_mask=src_key_padding_mask)
+
+        # 2. Decode Audio (with Cross-Attention to Memory)
+        output = self.decoder(
+            tgt_emb,
+            memory,
+            tgt_mask=tgt_mask,
+            tgt_key_padding_mask=tgt_key_padding_mask,
+            memory_key_padding_mask=src_key_padding_mask,  # Mask padding in cross-attention
         )
 
-        key_padding_mask = x == config.PAD_TOKEN_ID
-
-        x = self.blocks(
-            x_emb, mask=attn_mask, src_key_padding_mask=key_padding_mask, is_causal=True
-        )
-
-        x = self.ln_f(x)
-        logits = self.head(x)
+        output = self.ln_f(output)
+        logits = self.head(output)
 
         return logits
