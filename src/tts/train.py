@@ -20,7 +20,7 @@ NUM_WORKERS = 4
 ROOT_DIR = config.ROOT_DIR
 CHECKPOINT_DIR = ROOT_DIR / "checkpoints_model_full"
 DATA_DIR = ROOT_DIR / "data"
-RESUME_FROM = CHECKPOINT_DIR / "model_epoch_120.pt"
+RESUME_FROM = None
 
 
 def get_device():
