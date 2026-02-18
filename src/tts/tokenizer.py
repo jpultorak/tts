@@ -1,5 +1,6 @@
 import json
 import os
+import platform
 from pathlib import Path
 from typing import List
 
@@ -7,13 +8,15 @@ from phonemizer.backend import EspeakBackend
 
 import tts.config as config
 
-# MACOS
-# os.environ["PHONEMIZER_ESPEAK_LIBRARY"] = (
-#     "/opt/homebrew/lib/libespeak-ng.dylib"  # TODO: FIX THIS
-# )
+system = platform.system()
+path = None
+if system == "Darwin":
+    path = "/opt/homebrew/lib/libespeak-ng.dylib"
+elif system == "Windows":
+    path = r"C:\Program Files\eSpeak NG\libespeak-ng.dll"
+if os.path.exists(path):
+    os.environ["PHONEMIZER_ESPEAK_LIBRARY"] = path
 
-# WINDOWS
-os.environ["PHONEMIZER_ESPEAK_LIBRARY"] = r"C:\Program Files\eSpeak NG\libespeak-ng.dll"
 
 class Tokenizer:
     def __init__(self, vocab_path=config.VOCAB_PATH):
@@ -62,7 +65,7 @@ class Tokenizer:
         }
 
         next_id = max(self.token_to_id.values()) + 1
-        
+
         for tok in ph_unique:
             self.token_to_id[tok] = next_id
             next_id += 1

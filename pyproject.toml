@@ -16,6 +16,9 @@ dependencies = [
     "tqdm>=4.67.1",
 ]
 
+[tool.ruff]
+include = ["*.py"]
+
 [tool.ruff.lint]
 select = ["E4", "E7", "E9", "F", "I"]
 
@@ -37,6 +40,12 @@ url = "https://download.pytorch.org/whl/cu126"
 explicit = true
 
 [tool.uv.sources]
-torch = [{ index = "pytorch-cu126" }]
-torchaudio = [{ index = "pytorch-cu126" }]
-torchvision = [{ index = "pytorch-cu126" }]
+torch = [
+    { index = "pytorch-cu126", marker = "sys_platform == 'win32' or sys_platform == 'linux'" },
+]
+torchaudio = [
+    { index = "pytorch-cu126", marker = "sys_platform == 'win32' or sys_platform == 'linux'" },
+]
+torchvision = [
+    { index = "pytorch-cu126", marker = "sys_platform == 'win32' or sys_platform == 'linux'" },
+]

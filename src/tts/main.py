@@ -4,9 +4,9 @@ from tqdm import tqdm
 import tts.config as config
 from tts.infer import TTSInference
 
-CHECKPOINT_PATH = config.ROOT_DIR / "checkpoints_model_full" / "model_epoch_200.pt"
-TRAIN_DATA_DIR = config.ROOT_DIR / "data_test"
-OUTPUT_DIR = config.ROOT_DIR / "output_full"
+CHECKPOINT_PATH = config.ROOT_DIR / "final_models" / "model_epoch_40.pt"
+TRAIN_DATA_DIR = config.ROOT_DIR / "test_training_data"
+OUTPUT_DIR = config.ROOT_DIR / "output_model_2"
 
 
 def main():
@@ -66,7 +66,6 @@ def prompt_mode():
                 output_path=str(wav_path),
                 max_new_tokens=750,
             )
-            print(f"Saved to {sample_dir}")
         except Exception as e:
             print(f"Failed: {e}")
 
