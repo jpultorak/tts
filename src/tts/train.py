@@ -72,7 +72,7 @@ def train():
     scaler = torch.amp.GradScaler("cuda", enabled=use_amp)
 
     if use_amp:
-        print("--> Automatic Mixed Precision (AMP) Enabled 🚀")
+        print("--> Automatic Mixed Precision enabled ")
 
     os.makedirs(CHECKPOINT_DIR, exist_ok=True)
 
@@ -110,18 +110,15 @@ def train():
         total_loss = 0
         progress_bar = tqdm(train_loader, desc="Training")
 
-        # UPDATED: Unpack 3 items
         for batch_idx, (src, tgt_input, tgt_output) in enumerate(progress_bar):
             src = src.to(device)
             tgt_input = tgt_input.to(device)
             tgt_output = tgt_output.to(device)
 
             with torch.amp.autocast("cuda", enabled=use_amp):
-                # Forward pass takes two inputs now
                 logits = model(src, tgt_input)
 
                 B, T, C = logits.shape
-                # Calculate loss against tgt_output
                 loss = criterion(logits.view(B * T, C), tgt_output.view(B * T))
 
             optimizer.zero_grad()
@@ -139,7 +136,6 @@ def train():
         avg_loss = total_loss / len(train_loader)
         print(f"Epoch {epoch + 1} Complete. Average Loss: {avg_loss:.4f}")
 
-        # Save Checkpoint
         if (epoch + 1) % SAVE_EVERY == 0:
             ckpt_path = os.path.join(CHECKPOINT_DIR, f"model_epoch_{epoch + 1}.pt")
             save_checkpoint(model, optimizer, scaler, epoch + 1, avg_loss, ckpt_path)

@@ -21,15 +21,11 @@ class TTSDataset(Dataset):
         phonemes = data["phonemes"].long()
         audio = data["audio_tokens"].long()
 
-        # Source: Just phonemes
         src = phonemes
 
-        # Target Input: <SEP> + Audio (Teacher Forcing Input)
-        # We use SEP as the "Start of Audio" token here
         sep = torch.tensor([config.SEP_TOKEN_ID], dtype=torch.long)
         tgt_input = torch.cat([sep, audio])
 
-        # Target Output: Audio + <EOS> (What we want to predict)
         eos = torch.tensor([config.EOS_TOKEN_ID], dtype=torch.long)
         tgt_output = torch.cat([audio, eos])
 
@@ -39,13 +35,10 @@ class TTSDataset(Dataset):
 def collate_fn(batch):
     srcs, tgt_ins, tgt_outs = zip(*batch)
 
-    # Pad all sequences
     src_padded = pad_sequence(srcs, batch_first=True, padding_value=config.PAD_TOKEN_ID)
     tgt_in_padded = pad_sequence(
         tgt_ins, batch_first=True, padding_value=config.PAD_TOKEN_ID
     )
-    tgt_out_padded = pad_sequence(
-        tgt_outs, batch_first=True, padding_value=-100
-    )  # -100 for loss ignore
+    tgt_out_padded = pad_sequence(tgt_outs, batch_first=True, padding_value=-100)
 
     return src_padded, tgt_in_padded, tgt_out_padded
