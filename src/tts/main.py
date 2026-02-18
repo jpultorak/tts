@@ -1,30 +1,28 @@
-import torch
 from tqdm import tqdm
 
 import tts.config as config
 from tts.infer import TTSInference
 
-CHECKPOINT_PATH = config.ROOT_DIR / "final_models" / "model_epoch_40.pt"
-TRAIN_DATA_DIR = config.ROOT_DIR / "test_training_data"
+MODEL_PATH = config.ROOT_DIR / "final_models" / "model_epoch_120.pt"
+INPUT_FILE = config.ROOT_DIR / "input.txt"
 OUTPUT_DIR = config.ROOT_DIR / "output_model_2"
 
 
-def main():
+def process_input():
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-    tts = TTSInference(CHECKPOINT_PATH)
-    files = sorted(list(TRAIN_DATA_DIR.glob("*.pt")))
-    print(f"--> Found {len(files)} samples in {TRAIN_DATA_DIR}")
-    print(f"--> Generating audio to {OUTPUT_DIR}\n")
+    with open(INPUT_FILE, "r", encoding="utf-8") as f:
+        lines = [line.strip() for line in f if line.strip()]
 
-    for pt_file in tqdm(files, desc="Eval"):
-        data = torch.load(pt_file)
-        file_id = data.get("file_id", pt_file.stem)
-        text = data.get("text")
+    if not lines:
+        raise ValueError("Empty input file")
 
-        out_path = OUTPUT_DIR / f"{file_id}_generated.wav"
+    print(f"--> Found {len(lines)} sentences in {INPUT_FILE}")
 
-        print(f"\nGenerating: {file_id}")
-        print(f'   Text: "{text}"')
+    tts = TTSInference(MODEL_PATH)
+
+    for i, text in enumerate(tqdm(lines, desc="Processing")):
+        file_name = f"{i:03d}.wav"
+        out_path = OUTPUT_DIR / file_name
 
         try:
             tts.generate_audio(
@@ -33,7 +31,7 @@ def main():
                 max_new_tokens=750,
             )
         except Exception as e:
-            print(f"Failed to generate {file_id}: {e}")
+            print(f"\nFailed to generate {i}: {e}")
 
     print("Done")
 
@@ -42,7 +40,7 @@ def prompt_mode():
     PROMPT_DIR = OUTPUT_DIR / "prompts"
     PROMPT_DIR.mkdir(parents=True, exist_ok=True)
 
-    tts = TTSInference(CHECKPOINT_PATH)
+    tts = TTSInference(MODEL_PATH)
     prompt_idx = 0
 
     while True:
@@ -71,5 +69,5 @@ def prompt_mode():
 
 
 if __name__ == "__main__":
-    # main()
-    prompt_mode()
+    process_input()
+    # prompt_mode()
